@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+
+const airtable = require('../airtable')
+const requestsTableName = 'Requests - Beta'
+
+// const dayOfWeek = new Date().getDay();
+// const isWeekend = (dayOfWeek == 6) || (dayOfWeek == 0); // 6 = Saturday, 0 = Sunday
+// 
+// if (isWeekend) {
+//   return false // do not run this on the weekends
+//   updateQueue()
+// }
+updateQueue()
+async function updateQueue() {
+  console.log('updating queue...')
+  // get records who are prioritized for today
+  const requestsQueuedForToday = await airtable.getRecordsFromView(requestsTableName, {
+    view: 'All Request Types',
+    filterByFormula: `{Prioritized For} = "Today"`
+  })
+  // clear Prioritized For field if status is complete
+  for (const request of requestsQueuedForToday) {
+    if (request.get('Status') == 'Complete') {
+      airtable.updateRecord(requestsTableName, request.id, {
+        'Prioritized For': null
+      }) 
+    }
+  }
+  
+  // get records who are prioritized for tomorrow
+  const requestsQueuedForTomorrow = await airtable.getRecordsFromView(requestsTableName, {
+    view: 'All Request Types',
+    filterByFormula: `{Prioritized For} = "Tomorrow"`
+  })
+  
+  // change Prioritized For field from Tomorrow to Today if not complete already
+  for (const request of requestsQueuedForTomorrow) {
+    if (request.get('Status') == 'Complete') {
+      // if a request scheduled for tomorrow is already complete, remove priorization
+      airtable.updateRecord(requestsTableName, request.id, {
+        'Prioritized For': null
+      })
+    } else {
+      airtable.updateRecord(requestsTableName, request.id, {
+        'Prioritized For': 'Today'
+      })
+    }
+  }
+  
+  // get records who are not prioritized but have a due date of tomorrow (or 2 Workdays from now)
+  const requestsDueTomorrowNotQueued = await airtable.getRecordsFromView(requestsTableName, {
+    view: 'All Request Types',
+    filterByFormula: `IF(WORKDAY_DIFF(TODAY(), {Internal Due Date})=2, IF({Prioritized For}='', TRUE(), FALSE()), FALSE())`
+  })
+  
+  // set the prioritzation for Tomorrow if not complete already
+  for (const request of requestsDueTomorrowNotQueued) {
+    if (request.get('Status') != 'Complete') {
+      airtable.updateRecord(requestsTableName, request.id, {
+        'Prioritized For': 'Tomorrow'
+      })
+    }
+  }
+    
+}
