@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "airtable": "^0.5.7"
+    "airtable": "^0.5.7",
+    "request": "^2.88.0"
   }
 }

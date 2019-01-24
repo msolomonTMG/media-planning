@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+const zapier = require('../zapier')
+const airtable = require('../airtable')
+const requestsTableName = 'Requests - Beta'
+
+const dayOfWeek = new Date().getDay();
+const isMonday = dayOfWeek == 1; // 6 = Saturday, 0 = Sunday
+
+// if (!isMonday) {
+//   return false // only run on Monday
+// }
+
+sendLastWeekCompleteReport ()
+
+async function sendLastWeekCompleteReport() {
+  const requestsCompletedLastWeek = await airtable.getRecordsFromView(requestsTableName, {
+    view: 'Requests Completed Last Week'
+  })
+  let emailTable = `
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Requester</th>
+        <th>Media Planner</th>
+      </tr>
+  `
+  for (const [index, request] of requestsCompletedLastWeek.entries()) {
+    // every other row should be gray
+    let rowColor = index % 2 == 0 ? '#d5d5d5' : '#ffffff'
+    // set media planner if it exists
+    let mediaPlanner = request.fields['Media Planner'] ? request.fields['Media Planner'].email : ''
+    emailTable+=`
+      <tr style="background-color: ${rowColor}">
+        <td><a href="#">${request.get('Name')}</a></td>
+        <td>${request.get('Type')}</td>
+        <td>${request.get('Requester Email')}</td>
+        <td>${mediaPlanner}</td>
+      </tr>
+    `
+  }
+  emailTable+='</table>'
+  
+  zapier.sendLastWeekCompleteReport({emailTable: emailTable})
+}
