@@ -6,9 +6,9 @@ const requestsTableName = 'Requests - Beta'
 const dayOfWeek = new Date().getDay();
 const isMonday = dayOfWeek == 1; // 6 = Saturday, 0 = Sunday
 
-// if (!isMonday) {
-//   return false // only run on Monday
-// }
+if (!isMonday) {
+  return false // only run on Monday
+}
 
 sendLastWeekCompleteReport ()
 
